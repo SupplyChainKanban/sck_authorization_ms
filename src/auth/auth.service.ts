@@ -1,6 +1,6 @@
 import { Inject, Injectable, Logger, OnModuleInit } from '@nestjs/common';
 import { ClientProxy, RpcException } from '@nestjs/microservices';
-import { SCK_NATS_SERVICE } from 'src/config';
+import { envs, SCK_NATS_SERVICE } from 'src/config';
 import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
@@ -112,7 +112,24 @@ export class AuthService extends PrismaClient implements OnModuleInit {
         }
     }
 
-    verifyToken() {
-        return 'verify token'
+    async verifyToken(token: string) {
+        try {
+            const { sub, iat, exp, ...user } = this.jwtService.verify(token, {
+                secret: envs.jwtSecret,
+            })
+
+            return {
+                user: user,
+                token: await this.signJWT(user),
+            }
+
+        } catch (error) {
+            console.log(error);
+            throw new RpcException({
+                status: 401,
+                message: 'Invalid token',
+            });
+
+        }
     }
 }
