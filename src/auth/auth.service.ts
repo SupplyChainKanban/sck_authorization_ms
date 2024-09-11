@@ -5,6 +5,8 @@ import { PrismaClient } from '@prisma/client';
 import * as bcrypt from 'bcrypt';
 
 import { LoginUserDto, RegisterUserDto } from './dto';
+import { JwtService } from '@nestjs/jwt';
+import { JwtPayload } from './interfaces/jwt-payload.interface';
 
 @Injectable()
 export class AuthService extends PrismaClient implements OnModuleInit {
@@ -13,6 +15,7 @@ export class AuthService extends PrismaClient implements OnModuleInit {
 
     constructor(
         @Inject(SCK_NATS_SERVICE) private readonly client: ClientProxy,
+        private readonly jwtService: JwtService,
     ) {
         super();
     }
@@ -22,7 +25,9 @@ export class AuthService extends PrismaClient implements OnModuleInit {
         this.logger.log('MongoDB connected')
     }
 
-
+    async signJWT(payload: JwtPayload) {
+        return this.jwtService.sign(payload);
+    }
 
     async registerUser(registerUserDto: RegisterUserDto) {
         const { email, name, password } = registerUserDto
@@ -53,7 +58,7 @@ export class AuthService extends PrismaClient implements OnModuleInit {
 
             return {
                 user: rest,
-                token: 'ABC'
+                token: await this.signJWT(rest),
             }
 
 
@@ -95,7 +100,7 @@ export class AuthService extends PrismaClient implements OnModuleInit {
 
             return {
                 user: rest,
-                token: 'ABC'
+                token: await this.signJWT(rest)
             }
 
 
